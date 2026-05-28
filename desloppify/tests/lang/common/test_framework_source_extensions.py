@@ -13,6 +13,7 @@ import pytest
 
 from desloppify.languages._framework.frameworks.registry import (
     FRAMEWORK_SPECS,
+    _invalidate_extensions_cache,
     framework_source_extensions,
     register_framework_spec,
 )
@@ -24,11 +25,18 @@ from desloppify.languages._framework.frameworks.types import (
 
 @pytest.fixture
 def restore_registry():
-    """Snapshot + restore FRAMEWORK_SPECS so tests can register/unregister freely."""
+    """Snapshot + restore FRAMEWORK_SPECS so tests can register/unregister freely.
+
+    ``framework_source_extensions`` caches per-ecosystem results; the cache is
+    invalidated automatically on ``register_framework_spec`` but bypassed by
+    the direct dict mutations used here for teardown, so we invalidate
+    explicitly to keep the cache aligned with the restored registry state.
+    """
     snapshot = dict(FRAMEWORK_SPECS)
     yield
     FRAMEWORK_SPECS.clear()
     FRAMEWORK_SPECS.update(snapshot)
+    _invalidate_extensions_cache()
 
 
 def test_default_node_extensions_cover_astro_svelte_vue():
@@ -92,6 +100,29 @@ def test_ecosystem_filter_excludes_other_ecosystems(restore_registry):
 
     assert ".jinja" not in node_exts
     assert ".jinja" in python_exts
+
+
+def test_repeated_calls_return_cached_tuple(restore_registry):
+    """Per-ecosystem results are memoized and ``register_framework_spec`` invalidates."""
+    first = framework_source_extensions(ecosystem="node")
+    second = framework_source_extensions(ecosystem="node")
+    # Same tuple identity proves we returned the cached value rather than
+    # re-aggregating the registry on every call.
+    assert first is second
+
+    register_framework_spec(
+        FrameworkSpec(
+            id="cache-invalidation-fixture",
+            label="Cache invalidation fixture",
+            ecosystem="node",
+            detection=DetectionConfig(dependencies=("never-installed",)),
+            source_extensions=(".cache-invalidator",),
+        )
+    )
+
+    third = framework_source_extensions(ecosystem="node")
+    assert third is not first
+    assert ".cache-invalidator" in third
 
 
 def test_unfiltered_query_aggregates_across_ecosystems(restore_registry):

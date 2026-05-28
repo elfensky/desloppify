@@ -20,7 +20,7 @@ SVELTE_SPEC = FrameworkSpec(
             "svelte.config.mjs",
             "svelte.config.ts",
         ),
-        script_pattern=r"(?:^|\s)(?:svelte-kit|vite)(?:\s|$)",
+        script_pattern=r"(?:^|\s)svelte-kit(?:\s|$)",
     ),
     source_extensions=(".svelte",),
 )

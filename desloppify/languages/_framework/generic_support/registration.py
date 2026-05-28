@@ -106,10 +106,20 @@ def _resolve_generic_extractors(
         framework_extensions = (
             framework_source_extensions(ecosystem="node") if frameworks else None
         )
+        # Build a framework-scoped file finder that respects the same
+        # ``opts.exclude`` as the host language finder, so framework files in
+        # user-excluded directories (e.g. ``examples/``, ``e2e/``) don't
+        # contribute spurious importer edges.
+        framework_file_finder = (
+            make_file_finder(list(framework_extensions), opts.exclude)
+            if framework_extensions
+            else None
+        )
         dep_graph_fn = make_ts_dep_builder(
             ts_spec,
             file_finder,
             framework_extensions=framework_extensions,
+            framework_file_finder=framework_file_finder,
         )
     return file_finder, extract_fn, dep_graph_fn, has_treesitter, ts_spec
 

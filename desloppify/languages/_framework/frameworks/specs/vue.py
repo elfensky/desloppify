@@ -22,7 +22,7 @@ VUE_SPEC = FrameworkSpec(
             "nuxt.config.mjs",
             "nuxt.config.ts",
         ),
-        script_pattern=r"(?:^|\s)(?:vue-cli-service|nuxt|vite)(?:\s|$)",
+        script_pattern=r"(?:^|\s)(?:vue-cli-service|nuxt)(?:\s|$)",
     ),
     source_extensions=(".vue",),
 )
